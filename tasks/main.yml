@@ -1,0 +1,38 @@
+---
+- name: "check certbot_domains"
+  fail: msg="certbot_domains required"
+  when: certbot_domains|length < 1
+
+- name: "install docker"
+  yum: name=docker
+- name: "start docker"
+  service: name=docker state=started enabled=yes
+
+- name: "install httpd conf"
+  template: dest="/etc/httpd/conf.d/certbot-proxy.conf" src=etc/httpd/conf.d/certbot-proxy.conf.j2 mode=0644
+  register: httpd
+- name: "reload httpd"
+  service: name=httpd state=reloaded
+  when: httpd|changed
+
+- name: "mkdir"
+  file: dest="{{item}}" recurse=yes state=directory
+  with_items:
+    - "{{certbot_prefix}}/bin"
+
+- name: "install scripts"
+  template: dest="{{certbot_prefix}}/{{item}}" src="{{item}}.j2" mode=0755
+  with_items:
+    - bin/certonly.sh
+    - bin/renew.sh
+
+- name: "stat existing certificate"
+  stat: path="{{certbot_letsencrypt}}/live/{{certbot_domains[0]}}/cert.pem"
+  register: certificate
+
+- name: "run certonly"
+  command: '{{certbot_prefix|quote}}/bin/certonly.sh {{certbot_email|quote}} {{certbot_domains|map("quote")|join(" ")}}'
+  when: not certificate.stat.exists
+
+- name: "schedule renewal"
+  cron: name="certbot renew" job="{{certbot_prefix|quote}}/bin/renew.sh >/dev/null" state=present minute="0" hour="16" weekday="2"

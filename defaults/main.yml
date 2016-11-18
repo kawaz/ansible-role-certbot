@@ -1,0 +1,12 @@
+---
+certbot_email: ""
+certbot_domains: []
+
+# install files prefix
+certbot_prefix: /opt/kawaz.certbot
+# docker proxy
+certbot_host: localhost
+certbot_port: 10080
+# docker volumes
+certbot_letsencrypt: /etc/letsencrypt
+certbot_log: /var/log/letsencrypt

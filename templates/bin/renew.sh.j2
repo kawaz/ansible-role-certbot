@@ -1,0 +1,8 @@
+#!/bin/bash
+PORT=${PORT:-10080}
+docker run \
+  --rm \
+  -p "$PORT:80" \
+  -v {{certbot_letsencrypt|quote}}:/etc/letsencrypt \
+  {% if certbot_log %}-v {{certbot_log|quote}}:/var/log/letsencrypt{% endif %} \
+  deliverous/certbot renew
